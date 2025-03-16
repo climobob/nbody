@@ -1,8 +1,4 @@
-import sys
-
 from math import *
-import numpy as np
-#from point_mass import *
 
 class astronomy:
 # Universal constants:
@@ -20,8 +16,8 @@ class astronomy:
    radius_earth = 6371.1e3
 
 # meters:
-   rmoon   = 3.84399e8
-   au      = 1.49597870700e11
+   rmoon   = 3.84399e8         # radius of moon's orbit
+   au      = 1.49597870700e11  # radius of earth's orbit
    ly      = 9.46e15
    parsec  = 3.26*ly
 
