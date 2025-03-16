@@ -1,6 +1,5 @@
 import sys
 from math import *
-import pstats
 import copy
 
 import numpy as np
@@ -16,7 +15,7 @@ class point_mass:
      self.a = np.zeros((3), dtype=np.float64)
      self.dx = np.zeros((3), dtype=np.float64) # auxiliary variable
      self.m = 0.
-     self.k = 0.      # keplerian gravitational constant
+     self.k = 0.      # keplerian gravitational constant = mG
 
   def init_loc(self, x1, x2, x3):
     self.x[0] = x1
@@ -73,12 +72,8 @@ class point_mass:
     self.dx[1] = y.x[1] - self.x[1]
     self.dx[2] = y.x[2] - self.x[2]
 
-    # These two are equivalent in time
     r = sqrt(self.dx[0]*self.dx[0] + self.dx[1]*self.dx[1] + self.dx[2]*self.dx[2])
     a0 = y.k / r / r / r
-    #e2 r = pow(self.dx[0]*self.dx[0] + self.dx[1]*self.dx[1] + 
-    #           self.dx[2]*self.dx[2], 1.5)
-    #e2 a0 = y.k / r
 
     #adds ~60% to run time: self.a += a0*self.dx
     self.a[0] += a0*self.dx[0]
@@ -99,6 +94,7 @@ class point_mass:
 
 #--------------------------------------------------------------------
 # something to work on collections of point masses
+#--------------------------------------------------------------------
 class point_system: 
   com = point_mass()
   tke = 0.0
@@ -118,10 +114,7 @@ class point_system:
     sum = 0.0
     tmp = 0.0
     for i in range(0, self.nbody):
-      #debug: self.body[i].show()
       for j in range(i+1, self.nbody):
-        #debug: self.body[j].show()
-        #debug: print( self.body[i].m, self.body[j].k, dist(self.body[i], self.body[j]), flush=True)
         tmp = self.body[i].m * self.body[j].k / dist(self.body[i], self.body[j])
         sum -= tmp
     return sum
@@ -195,12 +188,10 @@ class point_system:
      # clean up step decrementing nbody and removing massless bodies
      for i in range (0, self.nbody-1):
        if (self.body[i].m == 0.):
-         #debug: 
-         print("body ",i," is massless, swap in a massy body", file = fout, flush=True)
+         #debug: print("body ",i," is massless, swap in a massy body", file = fout, flush=True)
          for j in range (self.nbody-1, i, -1):
            if (self.body[j].m != 0.):
-             #debug:
-             print(" swapping body ",j,"in to massless body ",i, flush=True, file = fout)
+             #debug: print(" swapping body ",j,"in to massless body ",i, flush=True, file = fout)
              self.body[i]   = copy.deepcopy(self.body[j])
              self.body[j].m = 0.
              break
@@ -216,8 +207,6 @@ class point_system:
      self.tpe = point_system.PE(self)
      print("delta tke tpe e after collision: ",tmpke-self.tke, tmppe-self.tpe, 
                                   tmpke+tmppe-self.tpe-self.tke, flush=True, file = fout)
-     # center of mass before and after:
-     #debug: exit(1)
   
   def closest(self):
     nearest = 10.*astronomy.rmoon
@@ -227,8 +216,6 @@ class point_system:
         tmp = dist(self.body[i], self.body[j])
         if (tmp < nearest):
           nearest = tmp
-        #if (dist(self.body[i], self.body[j]) < nearest):
-        #  nearest = dist(self.body[i], self.body[j])
     return nearest
 
   def step(self, dt):
@@ -238,8 +225,10 @@ class point_system:
         self.body[k].gravity(self.body[l])
   
     for j in range (0, self.nbody):
+      #non-symplectic:
       #self.body[j].update_loc(dt)
       #self.body[j].update_vel(dt)
+      #Symplectic
       self.body[j].update(dt)
 
   def show(self, fout = sys.stdout ):
